@@ -8,16 +8,16 @@ import unittest
 from pathlib import Path
 
 from py2reqs.import_extractor import ImportsExtractor
+from tests.py2reqs_fixtures import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
 
-from .py2reqs_fixtures import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
-
-TEST_PACKAGE_PATH = Path('package1').resolve()
-TEST_PACKAGE2_PATH = Path('package2').resolve()
-TEST_PATH_NOT_EXIST = Path('blah/blah')
-TEST_PATH_NOT_PYTHON = Path('package1/requirements.txt')
-TEST_FILE_PATH_MODULE1 = TEST_PACKAGE_PATH / 'module1.py'
-TEST_FILE_PATH_MODULE2 = TEST_PACKAGE_PATH / 'subpackage1' / 'module2.py'
-TEST_CWD_PATH = Path('.').resolve()
+THIS_FILE_FOLDER = Path(__file__).resolve().parent
+PACKAGE_PATH = (THIS_FILE_FOLDER / Path('package1')).resolve()
+PACKAGE2_PATH = (THIS_FILE_FOLDER / Path('package2')).resolve()
+PATH_NOT_EXIST = THIS_FILE_FOLDER / Path('blah/blah')
+PATH_NOT_PYTHON = THIS_FILE_FOLDER / Path('package1/requirements.txt')
+FILE_PATH_MODULE1 = THIS_FILE_FOLDER / PACKAGE_PATH / 'module1.py'
+FILE_PATH_MODULE2 = THIS_FILE_FOLDER / PACKAGE_PATH / 'subpackage1' / 'module2.py'
+CWD_PATH = Path('.').resolve()
 
 
 class TestImportsExtractor(unittest.TestCase):
@@ -33,48 +33,48 @@ class TestImportsExtractor(unittest.TestCase):
 
         # package root exists
         with self.assertRaises(ValueError) as cm:
-            ImportsExtractor(path=TEST_PACKAGE_PATH, package_root=TEST_PATH_NOT_EXIST)
+            ImportsExtractor(path=PACKAGE_PATH, package_root=PATH_NOT_EXIST)
         msg = str(cm.exception)
         self.assertRegex(msg, "^Package root.*does not exist")
 
         # package root is not a folder
         with self.assertRaises(ValueError) as cm:
-            ImportsExtractor(path=TEST_PACKAGE_PATH, package_root=TEST_PATH_NOT_PYTHON)
+            ImportsExtractor(path=PACKAGE_PATH, package_root=PATH_NOT_PYTHON)
         msg = str(cm.exception)
         self.assertRegex(msg, "not a folder")
 
         # package root does not contain path
         with self.assertRaises(ValueError) as cm:
-            ImportsExtractor(path=TEST_FILE_PATH_MODULE1, package_root=TEST_PACKAGE2_PATH)
+            ImportsExtractor(path=FILE_PATH_MODULE1, package_root=PACKAGE2_PATH)
         msg = str(cm.exception)
         self.assertRegex(msg, "not located in")
 
         # not a python file
         with self.assertRaises(ValueError) as cm:
-            ImportsExtractor(path=TEST_PATH_NOT_PYTHON, package_root=TEST_PACKAGE_PATH)
+            ImportsExtractor(path=PATH_NOT_PYTHON, package_root=PACKAGE_PATH)
         msg = str(cm.exception)
         self.assertRegex(msg, "Not a Python file")
 
     def test_get_python_file_path(self):
         # path does not exist
         with self.assertRaises(ValueError) as cm:
-            file_path = ImportsExtractor.get_python_file_path(str(TEST_PATH_NOT_EXIST))
+            _ = ImportsExtractor.get_python_file_path(str(PATH_NOT_EXIST))
         msg = str(cm.exception)
         self.assertRegex(msg, "not exist")
 
         # not a python file
         with self.assertRaises(ValueError) as cm:
-            file_path = ImportsExtractor.get_python_file_path(str(TEST_PATH_NOT_PYTHON))
+            _ = ImportsExtractor.get_python_file_path(str(PATH_NOT_PYTHON))
         msg = str(cm.exception)
         self.assertRegex(msg, "Not a Python file")
 
         # a folder
-        file_path = ImportsExtractor.get_python_file_path(str(TEST_PACKAGE_PATH))
-        self.assertRegex(str(file_path), f"{str(TEST_PACKAGE_PATH)}/__init__.py$")
+        file_path = ImportsExtractor.get_python_file_path(str(PACKAGE_PATH))
+        self.assertRegex(str(file_path), f"{str(PACKAGE_PATH)}/__init__.py$")
 
         # a Python file
-        file_path = ImportsExtractor.get_python_file_path(str(TEST_FILE_PATH_MODULE1))
-        self.assertRegex(str(file_path), f"{str(TEST_FILE_PATH_MODULE1)}$")
+        file_path = ImportsExtractor.get_python_file_path(str(FILE_PATH_MODULE1))
+        self.assertRegex(str(file_path), f"{str(FILE_PATH_MODULE1)}$")
 
     def test_extract(self):
         """
@@ -83,13 +83,13 @@ class TestImportsExtractor(unittest.TestCase):
         for name, expected_modules in PACKAGE1_EXPECTED_MODULES.items():
             if name not in TEST_FILES:
                 raise KeyError(f"Test file key {name} not found in TEST_FILES")
-            extractor = ImportsExtractor(TEST_FILES[name].path, TEST_PACKAGE_PATH)
+            extractor = ImportsExtractor(THIS_FILE_FOLDER / TEST_FILES[name].path, PACKAGE_PATH)
             self.assertListEqual(PACKAGE1_EXPECTED_MODULES[name], extractor.modules)
 
         for name, expected_modules in PACKAGE2_EXPECTED_MODULES.items():
             if name not in TEST_FILES:
                 raise KeyError(f"Test file key {name} not found in TEST_FILES")
-            extractor = ImportsExtractor(TEST_FILES[name].path, TEST_PACKAGE2_PATH)
+            extractor = ImportsExtractor(THIS_FILE_FOLDER / TEST_FILES[name].path, PACKAGE2_PATH)
             self.assertListEqual(PACKAGE2_EXPECTED_MODULES[name], extractor.modules)
 
 
