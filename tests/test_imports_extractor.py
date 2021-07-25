@@ -1,15 +1,15 @@
 """
 Testing the extraction of a list of modules from a Python file or __init__.py
 
-See test_files.py for details of the test cases.
+See py2reqs_fixtures.py for details of the test cases.
 """
 
-import ast
 import unittest
 from pathlib import Path
 
-from pylad.py2reqs import ImportsExtractor
-from test_files import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
+from py2reqs.import_extractor import ImportsExtractor
+
+from py2reqs_fixtures import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
 
 
 TEST_PACKAGE_PATH = Path('package1').resolve()
