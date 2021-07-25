@@ -1,5 +1,4 @@
 import ast
-
 from pathlib import Path, PurePath
 from typing import Optional, Union
 
@@ -11,6 +10,7 @@ class ImportsExtractor(ast.NodeVisitor):
     The default package root is the current working directory.
     The results are stored in the "modules" list.
     """
+
     def __init__(self, path: Union[str, Path], package_root: Optional[Union[str, Path]] = None) -> None:
         if not path:
             raise ValueError("Empty path.")
@@ -54,22 +54,28 @@ class ImportsExtractor(ast.NodeVisitor):
             maybe_file = Path(self.file_path.parent / (str(local_path) + '.py')).resolve()
             if maybe_folder.exists() or maybe_file.exists():
                 # local module, prepend the package root
-                self.modules.append('.'.join(
-                    list(self.file_path.parent.relative_to(self.package_root.parent).parts) + [node.module]
-                ))
+                self.modules.append(
+                    '.'.join(list(self.file_path.parent.relative_to(self.package_root.parent).parts) + [node.module])
+                )
             else:
                 # global module, save as is
                 self.modules.append(node.module)
         elif not node.module:
             # relative import: from .. import subpackage1
-            self.modules.append('.'.join(
-                list(self.file_path.parents[node.level - 1].relative_to(self.package_root.parent).parts) + [node.names[0].name]
-            ))
+            self.modules.append(
+                '.'.join(
+                    list(self.file_path.parents[node.level - 1].relative_to(self.package_root.parent).parts)
+                    + [node.names[0].name]
+                )
+            )
         else:
             # relative import: from ..subpackage1 import module5
-            self.modules.append('.'.join(
-                list(self.file_path.parents[node.level - 1].relative_to(self.package_root.parent).parts) + [node.module]
-            ))
+            self.modules.append(
+                '.'.join(
+                    list(self.file_path.parents[node.level - 1].relative_to(self.package_root.parent).parts)
+                    + [node.module]
+                )
+            )
 
     @staticmethod
     def get_python_file_path(path: Union[str, Path]) -> Path:
