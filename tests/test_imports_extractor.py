@@ -9,7 +9,8 @@ from pathlib import Path
 
 from py2reqs.import_extractor import ImportsExtractor
 
-from .py2reqs_fixtures import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
+from py2reqs_fixtures import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
+
 
 TEST_PACKAGE_PATH = Path('package1').resolve()
 TEST_PACKAGE2_PATH = Path('package2').resolve()
@@ -83,13 +84,13 @@ class TestImportsExtractor(unittest.TestCase):
         for name, expected_modules in PACKAGE1_EXPECTED_MODULES.items():
             if name not in TEST_FILES:
                 raise KeyError(f"Test file key {name} not found in TEST_FILES")
-            extractor = ImportsExtractor(TEST_FILES[name].path, TEST_PACKAGE_PATH)
+            extractor = ImportsExtractor(TEST_FILES[name]['path'], TEST_PACKAGE_PATH)
             self.assertListEqual(PACKAGE1_EXPECTED_MODULES[name], extractor.modules)
 
         for name, expected_modules in PACKAGE2_EXPECTED_MODULES.items():
             if name not in TEST_FILES:
                 raise KeyError(f"Test file key {name} not found in TEST_FILES")
-            extractor = ImportsExtractor(TEST_FILES[name].path, TEST_PACKAGE2_PATH)
+            extractor = ImportsExtractor(TEST_FILES[name]['path'], TEST_PACKAGE2_PATH)
             self.assertListEqual(PACKAGE2_EXPECTED_MODULES[name], extractor.modules)
 
 
