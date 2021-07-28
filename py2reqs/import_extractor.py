@@ -15,9 +15,6 @@ class ImportsExtractor(ast.NodeVisitor):
         if not path:
             raise ValueError("Empty path.")
 
-        # TODO: handle empty package_root so that the class still works on stand-alone scripts
-        # TODO: add tests for empty package_root
-
         self.package_root = Path(package_root or '.').resolve()
         if not self.package_root.exists():
             raise ValueError(f"Package root folder {package_root} does not exist.")
@@ -25,7 +22,7 @@ class ImportsExtractor(ast.NodeVisitor):
         if not self.package_root.is_dir():
             raise ValueError(f"Package root '{package_root}' is not a folder.")
 
-        if not (path.samefile(package_root) or str(package_root) in str(path.resolve())):
+        if not (path.samefile(self.package_root) or str(self.package_root) in str(path.resolve())):
             raise ValueError(f"Path '{path}' is not located in the package root '{package_root}'.")
 
         self.file_path = ImportsExtractor.get_python_file_path(path)

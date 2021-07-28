@@ -17,6 +17,7 @@ PATH_NOT_EXIST = THIS_FILE_FOLDER / Path('blah/blah')
 PATH_NOT_PYTHON = THIS_FILE_FOLDER / Path('package1/requirements.txt')
 FILE_PATH_MODULE1 = THIS_FILE_FOLDER / PACKAGE_PATH / 'module1.py'
 FILE_PATH_MODULE2 = THIS_FILE_FOLDER / PACKAGE_PATH / 'subpackage1' / 'module2.py'
+FILE_PATH_MODULE10 = THIS_FILE_FOLDER / PACKAGE2_PATH / 'module10.py'
 CWD_PATH = Path('.').resolve()
 
 
@@ -91,6 +92,11 @@ class TestImportsExtractor(unittest.TestCase):
                 raise KeyError(f"Test file key {name} not found in TEST_FILES")
             extractor = ImportsExtractor(THIS_FILE_FOLDER / TEST_FILES[name].path, PACKAGE2_PATH)
             self.assertListEqual(PACKAGE2_EXPECTED_MODULES[name], extractor.modules)
+
+        # None as the package_root
+        extractor = ImportsExtractor(FILE_PATH_MODULE10, package_root=None)
+        expected = ['package1.subpackage1']
+        self.assertListEqual(expected, extractor.modules)
 
 
 if __name__ == '__main__':
