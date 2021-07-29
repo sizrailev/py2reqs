@@ -1,3 +1,4 @@
+import sys
 import unittest
 from pathlib import Path
 
@@ -5,9 +6,14 @@ from py2reqs.imports_collector import ImportsCollector
 
 THIS_FILE_FOLDER = Path(__file__).resolve().parent
 PACKAGE_PATH = (THIS_FILE_FOLDER / Path('package1')).resolve()
+SUBPACKAGE_PATH = (PACKAGE_PATH / Path('subpackage1')).resolve()
 PACKAGE2_PATH = (THIS_FILE_FOLDER / Path('package2')).resolve()
 PATH_NOT_EXIST = THIS_FILE_FOLDER / Path('blah/blah')
 FILE_PATH_MODULE1 = THIS_FILE_FOLDER / PACKAGE_PATH / 'module1.py'
+FILE_PATH_MODULE2 = THIS_FILE_FOLDER / PACKAGE_PATH / 'subpackage1' / 'module2.py'
+# For the package1 and package2 the app folder is py2reqs/tests
+APP_DIRS = [THIS_FILE_FOLDER]
+APP_DIRS_STR = [str(THIS_FILE_FOLDER)]
 
 
 class TestImportsCollector(unittest.TestCase):
@@ -29,27 +35,56 @@ class TestImportsCollector(unittest.TestCase):
         self.assertRegex(msg, "^Application directory.*not a dir")
 
     def test_find_path_in_app_dirs(self):
-        # Passing paths
-        collector = ImportsCollector([PACKAGE_PATH, PACKAGE2_PATH])
-        root_folder = collector._find_path_in_app_dirs(source_path=FILE_PATH_MODULE1)
+        # passing paths one level down
+        collector = ImportsCollector(APP_DIRS)
+        root_folder = collector._find_package_root_in_app_dirs(source_path=FILE_PATH_MODULE1)
+        self.assertEqual(str(PACKAGE_PATH), str(root_folder))
+
+        # two levels down
+        collector = ImportsCollector(APP_DIRS)
+        root_folder = collector._find_package_root_in_app_dirs(source_path=FILE_PATH_MODULE2)
         self.assertEqual(str(PACKAGE_PATH), str(root_folder))
 
         # passing strings
-        collector = ImportsCollector([str(PACKAGE_PATH), str(PACKAGE2_PATH)])
-        root_folder = collector._find_path_in_app_dirs(source_path=str(FILE_PATH_MODULE1))
+        collector = ImportsCollector(APP_DIRS_STR)
+        root_folder = collector._find_package_root_in_app_dirs(source_path=str(FILE_PATH_MODULE1))
         self.assertEqual(str(PACKAGE_PATH), str(root_folder))
 
         # source path doesn't exist
-        collector = ImportsCollector([PACKAGE_PATH, PACKAGE2_PATH])
+        collector = ImportsCollector(APP_DIRS)
         with self.assertRaises(ValueError) as cm:
-            collector._find_path_in_app_dirs(source_path=PATH_NOT_EXIST)
+            collector._find_package_root_in_app_dirs(source_path=PATH_NOT_EXIST)
         msg = str(cm.exception)
         self.assertRegex(msg, "^Path.*does not exist")
 
         # not in app_dirs
-        collector = ImportsCollector([PACKAGE_PATH, PACKAGE2_PATH])
-        root_folder = collector._find_path_in_app_dirs(source_path=__file__)
+        collector = ImportsCollector(APP_DIRS)
+        root_folder = collector._find_package_root_in_app_dirs(source_path=__file__)
         self.assertIsNone(root_folder)
+
+        # same as one of app_dirs
+        collector = ImportsCollector(APP_DIRS)
+        with self.assertRaises(ValueError) as cm:
+            collector._find_package_root_in_app_dirs(source_path=APP_DIRS[0])
+        msg = str(cm.exception)
+        self.assertRegex(msg, "^Path.*one of the app")
+
+        # file in app dir
+        collector = ImportsCollector([PACKAGE_PATH])
+        root_folder = collector._find_package_root_in_app_dirs(source_path=FILE_PATH_MODULE1)
+        self.assertIsNone(root_folder)
+
+        # folder in app dir
+        collector = ImportsCollector([PACKAGE_PATH])
+        root_folder = collector._find_package_root_in_app_dirs(source_path=SUBPACKAGE_PATH)
+        self.assertEqual(str(SUBPACKAGE_PATH), str(root_folder))
+
+    def test_collect_dependencies(self):
+        for folder in APP_DIRS:
+            sys.path.insert(0, str(folder))
+        collector = ImportsCollector(APP_DIRS)
+        collector.collect_dependencies(FILE_PATH_MODULE1)
+        self.assertEqual(1, 0)
 
 
 if __name__ == '__main__':

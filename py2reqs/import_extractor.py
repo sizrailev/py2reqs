@@ -14,6 +14,7 @@ class ImportsExtractor(ast.NodeVisitor):
     def __init__(self, path: Union[str, Path], package_root: Optional[Union[str, Path]] = None) -> None:
         if not path:
             raise ValueError("Empty path.")
+        path = Path(path).resolve()
 
         self.package_root = Path(package_root or '.').resolve()
         if not self.package_root.exists():

@@ -39,10 +39,14 @@ class ImportsCollector:
         self.visited_files: Set[str] = set()  # application module files that have been visited
         self._verbose: bool = verbose
 
-    def _find_path_in_app_dirs(self, source_path: Union[str, Path]) -> Optional[Path]:
+    def _find_package_root_in_app_dirs(self, source_path: Union[str, Path]) -> Optional[Path]:
         """
-        Checks if the source path is in any of the app_dirs and returns the application directory path
-        or None if it wasn't found.
+        Checks if the source path for a module is in a package within any of the app_dirs
+        and returns the package root path or None if it wasn't found.
+        For example, if the package structure is `app/package1/module1.py` and `app/script1.py`
+        and `app` is in the `app_dirs`, module1 is inside the package1 package and the
+        package root is `app/package1`, whereas script1 is not in a package, so the package root
+        will be None.
         """
         path = Path(source_path).resolve()
         if not path.exists():
@@ -51,17 +55,39 @@ class ImportsCollector:
         for folder in self.app_dirs:
             if str(folder) in str(path):
                 # source_path is inside one of the app_dirs
-                return Path(folder).resolve()
+                relative_path = path.relative_to(folder)
+                if str(relative_path) == '.':
+                    # path and folder are the same - should not happen
+                    raise ValueError(f"Path {source_path} is one of the application directories.")
+                if len(relative_path.parts) == 1:
+                    # path is in the folder
+                    if path.is_file():
+                        # a file in the app dir => no package root
+                        return None
+                    elif path.is_dir():
+                        # a folder in the app dir => the package root is path
+                        return path
+                else:
+                    return Path(folder).resolve() / relative_path.parts[0]
         return None
 
-    def collect_dependencies(self, source_path: Union[str, Path]) -> None:
-        root_folder = self._find_path_in_app_dirs(source_path)
+    def process_path(self, path: Union[str, Path]) -> None:
+        root_folder = self._find_package_root_in_app_dirs(path)
+        extractor = ImportsExtractor(path, package_root=root_folder)
+        for module in extractor.modules:
+            self.process_module(module)
+        self.visited_files.add(path)
 
-    def _add_module(self, full_module_name: str) -> None:
+    def collect_dependencies(self, source_path: Union[str, Path]) -> None:
+        self.process_path(source_path)
+        while len(self.files_to_visit):
+            self.process_path(self.files_to_visit.pop())
+
+    def _add_local_module(self, full_module_name: str) -> None:
         """
         Retrieve the file containing the module and add it to the queue for visits.
         """
-        app_dirs = tuple([str(self.app_dirs) for d in self.app_dirs])
+        app_dirs = tuple([str(d) for d in self.app_dirs])
         found, module_path, is_builtin = _get_module_info(
             full_module_name,
             application_dirs=app_dirs,
@@ -79,7 +105,7 @@ class ImportsCollector:
         if self._verbose:
             print(f"Processing module {full_module_name}")
         top_module_name, _, _ = full_module_name.partition('.')
-        app_dirs = tuple([str(self.app_dirs) for d in self.app_dirs])
+        app_dirs = tuple([str(d) for d in self.app_dirs])
         import_type = classify_import(top_module_name, app_dirs)
 
         if self._verbose:
@@ -88,4 +114,9 @@ class ImportsCollector:
         if import_type == ImportType.THIRD_PARTY:
             self.third_party.add(top_module_name)
         elif import_type == ImportType.APPLICATION:
-            self._add_module(full_module_name)
+            self._add_local_module(full_module_name)
+        elif import_type in (ImportType.BUILTIN, ImportType.FUTURE):
+            self.builtins.add(top_module_name)
+        else:
+            # shouldn't happen, adding in case more types are added
+            raise ValueError(f"Unknown import type {import_type}")
