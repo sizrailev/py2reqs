@@ -7,11 +7,12 @@ Locate local dependency files and recursively extract their dependencies.
 """
 
 from pathlib import Path
-from typing import List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 from aspy.refactor_imports.classify import ImportType, _get_module_info, classify_import
 
 from py2reqs.import_extractor import ImportsExtractor
+from py2reqs.utils import get_python_file_path
 
 
 class ImportsCollector:
@@ -36,7 +37,10 @@ class ImportsCollector:
         self.builtins: Set[str] = set()  # built-in top-level modules
         self.local: Set[str] = set()  # top-level modules within app_dirs
         self.files_to_visit: Set[str] = set()  # a queue of application module files to visit
+        self.source_files: Set[str] = set()  # files for which the dependencies are collected
         self.visited_files: Set[str] = set()  # application module files that have been visited
+        self.dependencies: Dict[str, List[str]] = dict()  # a map of file dependencies on modules
+        self.local_module_paths: Dict[str, str] = dict()  # a map of local modules to their resolved paths
         self._verbose: bool = verbose
 
     def _find_package_root_in_app_dirs(self, source_path: Union[str, Path]) -> Optional[Path]:
@@ -74,11 +78,13 @@ class ImportsCollector:
     def process_path(self, path: Union[str, Path]) -> None:
         root_folder = self._find_package_root_in_app_dirs(path)
         extractor = ImportsExtractor(path, package_root=root_folder)
+        self.dependencies[path] = sorted(list(set(extractor.modules)))
         for module in extractor.modules:
             self.process_module(module)
-        self.visited_files.add(path)
+        self.visited_files.add(str(get_python_file_path(path)))
 
     def collect_dependencies(self, source_path: Union[str, Path]) -> None:
+        self.source_files.add(str(get_python_file_path(source_path)))
         self.process_path(source_path)
         while len(self.files_to_visit):
             self.process_path(self.files_to_visit.pop())
@@ -92,10 +98,12 @@ class ImportsCollector:
             full_module_name,
             application_dirs=app_dirs,
         )
-        if module_path not in self.visited_files:
+        module_path = get_python_file_path(module_path)
+        if str(module_path) not in self.visited_files:
             if self._verbose:
                 print(f"Module path: {module_path}")
-            self.files_to_visit.add(module_path)
+            self.files_to_visit.add(str(module_path))
+            self.local_module_paths[full_module_name] = str(module_path)
 
     def process_module(self, full_module_name: str) -> None:
         """
@@ -115,6 +123,7 @@ class ImportsCollector:
             self.third_party.add(top_module_name)
         elif import_type == ImportType.APPLICATION:
             self._add_local_module(full_module_name)
+            self.local.add(top_module_name)
         elif import_type in (ImportType.BUILTIN, ImportType.FUTURE):
             self.builtins.add(top_module_name)
         else:
