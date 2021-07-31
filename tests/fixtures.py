@@ -33,18 +33,19 @@ class TestFile:
 
 
 PACKAGE1_EXPECTED_MODULES: Dict[str, List[str]] = {
-    'package1_init': ['package1.subpackage1.module4'],
+    'package1_init': ['package1.subpackage1.module4', 'package1', 'package1.subpackage1'],
     'package1_absolute': ['os', 'pandas'],
     'package1_indented': ['this', 'that'],
     'package1_absolute_from': ['os', 'pandas'],
-    'package1_module1': ['package1.subpackage1', 'package1.subpackage1.module2'],
-    'package1_subpackage1_init': ['package1.subpackage1.module3'],
+    'package1_module1': ['package1.subpackage1', 'package1.subpackage1.module2', 'package1'],
+    'package1_subpackage1_init': ['package1.subpackage1.module3', 'package1', 'package1.subpackage1'],
     'package1_module2': [
         'package1.subpackage1.module3',
         'package1.subpackage1',
         'package1.subpackage1.module4',
         'package1.module1',
         'package1.subpackage1.module4',
+        'package1',
     ],
     'package1_module3': [],
     'package1_module4': [],
@@ -52,7 +53,7 @@ PACKAGE1_EXPECTED_MODULES: Dict[str, List[str]] = {
 
 PACKAGE2_EXPECTED_MODULES: Dict[str, List[str]] = {
     'package2_init': [],
-    'package2_module10': ['package1.subpackage1'],
+    'package2_module10': ['package1.subpackage1', 'package1'],
 }
 
 PACKAGE1_INIT = """\

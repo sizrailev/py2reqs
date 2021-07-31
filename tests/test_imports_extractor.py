@@ -1,14 +1,14 @@
 """
 Testing the extraction of a list of modules from a Python file or __init__.py
 
-See py2reqs_fixtures.py for details of the test cases.
+See fixtures.py for details of the test cases.
 """
 
 import unittest
 from pathlib import Path
 
 from py2reqs.import_extractor import ImportsExtractor
-from tests.py2reqs_fixtures import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
+from tests.fixtures import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
 
 THIS_FILE_FOLDER = Path(__file__).resolve().parent
 PACKAGE_PATH = (THIS_FILE_FOLDER / Path('package1')).resolve()
@@ -56,27 +56,6 @@ class TestImportsExtractor(unittest.TestCase):
         msg = str(cm.exception)
         self.assertRegex(msg, "Not a Python file")
 
-    def test_get_python_file_path(self):
-        # path does not exist
-        with self.assertRaises(ValueError) as cm:
-            _ = ImportsExtractor.get_python_file_path(str(PATH_NOT_EXIST))
-        msg = str(cm.exception)
-        self.assertRegex(msg, "not exist")
-
-        # not a python file
-        with self.assertRaises(ValueError) as cm:
-            _ = ImportsExtractor.get_python_file_path(str(PATH_NOT_PYTHON))
-        msg = str(cm.exception)
-        self.assertRegex(msg, "Not a Python file")
-
-        # a folder
-        file_path = ImportsExtractor.get_python_file_path(str(PACKAGE_PATH))
-        self.assertRegex(str(file_path), f"{str(PACKAGE_PATH)}/__init__.py$")
-
-        # a Python file
-        file_path = ImportsExtractor.get_python_file_path(str(FILE_PATH_MODULE1))
-        self.assertRegex(str(file_path), f"{str(FILE_PATH_MODULE1)}$")
-
     def test_extract(self):
         """
         Run tests on all modules with keys in EXPECTED_MODULES
@@ -95,7 +74,7 @@ class TestImportsExtractor(unittest.TestCase):
 
         # None as the package_root
         extractor = ImportsExtractor(FILE_PATH_MODULE10, package_root=None)
-        expected = ['package1.subpackage1']
+        expected = ['package1.subpackage1', 'package1']
         self.assertListEqual(expected, extractor.modules)
 
 
