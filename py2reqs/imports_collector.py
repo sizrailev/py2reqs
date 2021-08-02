@@ -76,9 +76,10 @@ class ImportsCollector:
         return None
 
     def process_path(self, path: Union[str, Path]) -> None:
+        path = Path(path).resolve()
         root_folder = self._find_package_root_in_app_dirs(path)
         extractor = ImportsExtractor(path, package_root=root_folder)
-        self.dependencies[path] = sorted(list(set(extractor.modules)))
+        self.dependencies[str(path)] = sorted(list(set(extractor.modules)))
         for module in extractor.modules:
             self.process_module(module)
         self.visited_files.add(str(get_python_file_path(path)))

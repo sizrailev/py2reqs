@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from py2reqs.imports_collector import ImportsCollector
+from tests.fixtures import EXPECTED_DEPENDENCIES, TEST_FILES
 
 THIS_FILE_FOLDER = Path(__file__).resolve().parent
 PACKAGE1_PATH = (THIS_FILE_FOLDER / Path('package1')).resolve()
@@ -98,6 +99,16 @@ class TestImportsCollector(unittest.TestCase):
         self.assertEqual(1, len(collector2.dependencies))
         self.assertSetEqual(set(), collector2.local)
         self.assertSetEqual({'pandas'}, collector2.third_party)
+
+        for key in EXPECTED_DEPENDENCIES.keys():
+            collector3 = ImportsCollector(APP_DIRS)
+            source_path = THIS_FILE_FOLDER / TEST_FILES[key].path
+            collector3.collect_dependencies(source_path)
+            expected_dependencies = [
+                str((THIS_FILE_FOLDER / TEST_FILES[d].path).resolve()) for d in EXPECTED_DEPENDENCIES[key]
+            ]
+            actual_dependencies = [str(d) for d in collector3.dependencies.keys()]
+            self.assertListEqual(sorted(expected_dependencies), sorted(actual_dependencies))
 
 
 if __name__ == '__main__':
