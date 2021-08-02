@@ -1,7 +1,8 @@
+import os
 import unittest
 from pathlib import Path
 
-from py2reqs.utils import get_module_parents, get_python_file_path
+from py2reqs.utils import get_module_from_path, get_module_parents, get_python_file_path
 
 # TODO: move common constants to fixtures.py
 THIS_FILE_FOLDER = Path(__file__).resolve().parent
@@ -45,6 +46,26 @@ class TestUtils(unittest.TestCase):
         module_name = 'a'
         expected = []
         self.assertListEqual(expected, get_module_parents(module_name))
+
+    def test_get_module_from_path(self):
+        module = get_module_from_path('package1/module1.py', 'package1')
+        self.assertEqual('package1.module1', module)
+
+        module = get_module_from_path('package1/module1.py', 'package1')
+        self.assertEqual('package1.module1', module)
+
+        module = get_module_from_path('tests/package1/module1.py', 'tests/package1')
+        self.assertEqual('package1.module1', module)
+
+        module = get_module_from_path('tests/package1', 'tests')
+        self.assertEqual('tests.package1', module)
+
+        module = get_module_from_path('tests/package1/__init__.py', 'tests/package1')
+        self.assertEqual('package1', module)
+
+        os.chdir('tests')
+        module = get_module_from_path('fixtures.py', '.')
+        self.assertEqual('tests.fixtures', module)
 
 
 if __name__ == '__main__':

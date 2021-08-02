@@ -2,7 +2,7 @@ import ast
 from pathlib import Path, PurePath
 from typing import List, Optional, Union
 
-from py2reqs.utils import get_module_parents, get_python_file_path
+from py2reqs.utils import get_module_from_path, get_module_parents, get_python_file_path
 
 
 class ImportsExtractor(ast.NodeVisitor):
@@ -30,6 +30,7 @@ class ImportsExtractor(ast.NodeVisitor):
             raise ValueError(f"Path '{path}' is not located in the package root '{package_root}'.")
 
         self.file_path: Path = get_python_file_path(path)
+        self.full_module_name = get_module_from_path(self.file_path, self.package_root)
         self.imports: List[ast.Import] = []
         self.importsFrom: List[ast.ImportFrom] = []
         self.modules: List[str] = []
