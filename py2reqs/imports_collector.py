@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Set, Union
 
 from aspy.refactor_imports.classify import ImportType, _get_module_info, classify_import
 
-from py2reqs.import_extractor import ImportsExtractor
+from py2reqs.imports_extractor import ImportsExtractor
 from py2reqs.utils import get_python_file_path
 
 

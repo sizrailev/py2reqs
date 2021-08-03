@@ -7,7 +7,7 @@ See fixtures.py for details of the test cases.
 import unittest
 from pathlib import Path
 
-from py2reqs.import_extractor import ImportsExtractor
+from py2reqs.imports_extractor import ImportsExtractor
 from tests.fixtures import PACKAGE1_EXPECTED_MODULES, PACKAGE2_EXPECTED_MODULES, TEST_FILES
 
 THIS_FILE_FOLDER = Path(__file__).resolve().parent
