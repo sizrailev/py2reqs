@@ -149,11 +149,9 @@ def foo3():
     pass
 """
 
+# module 3 doesn't import anything
 EXPECTED_DEPENDENCIES['package1_module3'] = [
-    'package1_init',
-    'package1_subpackage1_init',
     'package1_module3',
-    'package1_module4',  # imported by package1
 ]
 
 MODULE4 = """\
@@ -167,9 +165,6 @@ def bar4():
 """
 
 EXPECTED_DEPENDENCIES['package1_module4'] = [
-    'package1_init',
-    'package1_subpackage1_init',
-    'package1_module3',  # imported by subpackage1
     'package1_module4',
 ]
 

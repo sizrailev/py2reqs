@@ -8,7 +8,7 @@ from py2reqs.utils import get_module_from_path, get_module_parents, get_python_f
 class ImportsExtractor(ast.NodeVisitor):
     """
     Extract a list of imports from a Python file or a folder's __init__.py file,
-    including each imported module's packages and subpackages.
+    including each imported module's parent package and subpackages.
     The package root folder must contain the file and is necessary to resolve relative imports.
     The default package root is the current working directory.
     The results are stored in the "modules" list.
