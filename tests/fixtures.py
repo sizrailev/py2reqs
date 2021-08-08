@@ -33,18 +33,19 @@ class TestFile:
 
 
 PACKAGE1_EXPECTED_MODULES: Dict[str, List[str]] = {
-    'package1_init': ['package1.subpackage1.module4'],
+    'package1_init': ['package1.subpackage1.module4', 'package1', 'package1.subpackage1'],
     'package1_absolute': ['os', 'pandas'],
     'package1_indented': ['this', 'that'],
     'package1_absolute_from': ['os', 'pandas'],
-    'package1_module1': ['package1.subpackage1', 'package1.subpackage1.module2'],
-    'package1_subpackage1_init': ['package1.subpackage1.module3'],
+    'package1_module1': ['package1.subpackage1', 'package1.subpackage1.module2', 'package1'],
+    'package1_subpackage1_init': ['package1.subpackage1.module3', 'package1', 'package1.subpackage1'],
     'package1_module2': [
         'package1.subpackage1.module3',
         'package1.subpackage1',
         'package1.subpackage1.module4',
         'package1.module1',
         'package1.subpackage1.module4',
+        'package1',
     ],
     'package1_module3': [],
     'package1_module4': [],
@@ -52,12 +53,21 @@ PACKAGE1_EXPECTED_MODULES: Dict[str, List[str]] = {
 
 PACKAGE2_EXPECTED_MODULES: Dict[str, List[str]] = {
     'package2_init': [],
-    'package2_module10': ['package1.subpackage1'],
+    'package2_module10': ['package1.subpackage1', 'package1'],
 }
+
+EXPECTED_DEPENDENCIES: Dict[str, List[str]] = dict()
 
 PACKAGE1_INIT = """\
 from .subpackage1.module4 import foo4
 """
+
+EXPECTED_DEPENDENCIES['package1_init'] = [
+    'package1_init',
+    'package1_subpackage1_init',
+    'package1_module3',  # imported by subpackage1
+    'package1_module4',  # imported by package1
+]
 
 SUBPACKAGE1_INIT = """\
 from .module3 import foo3 as bar3
@@ -66,6 +76,13 @@ from .module3 import foo3 as bar3
 def foo():
     bar3()
 """
+
+EXPECTED_DEPENDENCIES['package1_subpackage1_init'] = [
+    'package1_init',
+    'package1_subpackage1_init',
+    'package1_module3',  # imported by subpackage1
+    'package1_module4',  # imported by package1
+]
 
 ABSOLUTE_IMPORTS = """\
 import os
@@ -95,6 +112,14 @@ def foo1():
     foo2()
 """
 
+EXPECTED_DEPENDENCIES['package1_module1'] = [
+    'package1_init',
+    'package1_subpackage1_init',
+    'package1_module1',
+    'package1_module2',
+    'package1_module3',
+    'package1_module4',
+]
 
 MODULE2_RELATIVE_IMPORTS_FROM = """\
 # relative imports
@@ -109,11 +134,25 @@ def foo2():
     bar4()
 """
 
+EXPECTED_DEPENDENCIES['package1_module2'] = [
+    'package1_init',
+    'package1_subpackage1_init',
+    'package1_module1',
+    'package1_module2',
+    'package1_module3',
+    'package1_module4',
+]
+
 MODULE3 = """\
 # imported by module2 and subpackage1/__init__.py
 def foo3():
     pass
 """
+
+# module 3 doesn't import anything
+EXPECTED_DEPENDENCIES['package1_module3'] = [
+    'package1_module3',
+]
 
 MODULE4 = """\
 # imported by module2 and package1/__init__.py
@@ -125,6 +164,10 @@ def bar4():
     pass
 """
 
+EXPECTED_DEPENDENCIES['package1_module4'] = [
+    'package1_module4',
+]
+
 MODULE10 = """\
 # package1 can be a 3rd party or same party to package2
 from package1.subpackage1 import foo4
@@ -133,6 +176,14 @@ from package1.subpackage1 import foo4
 def foo10():
     foo4()
 """
+
+EXPECTED_DEPENDENCIES['package2_module10'] = [
+    'package1_init',
+    'package1_subpackage1_init',
+    'package1_module3',  # imported by subpackage1
+    'package1_module4',  # imported by package1
+    'package2_module10',
+]
 
 REQUIREMENTS = """\
 pandas

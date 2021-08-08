@@ -11,3 +11,9 @@ pip install -U pre-commit
 # Set up the git pre-commit hooks
 pre-commit install
 ```
+
+## Tests
+Run tests from the root folder containing `py2reqs` and `tests`tests with
+```shell
+python -m unittest
+```

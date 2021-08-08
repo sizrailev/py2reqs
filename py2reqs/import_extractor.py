@@ -1,11 +1,14 @@
 import ast
 from pathlib import Path, PurePath
-from typing import Optional, Union
+from typing import List, Optional, Union
+
+from py2reqs.utils import get_module_from_path, get_module_parents, get_python_file_path
 
 
 class ImportsExtractor(ast.NodeVisitor):
     """
-    Extract a list of imports from a Python file or a folder's __init__.py file.
+    Extract a list of imports from a Python file or a folder's __init__.py file,
+    including each imported module's parent package and subpackages.
     The package root folder must contain the file and is necessary to resolve relative imports.
     The default package root is the current working directory.
     The results are stored in the "modules" list.
@@ -14,6 +17,7 @@ class ImportsExtractor(ast.NodeVisitor):
     def __init__(self, path: Union[str, Path], package_root: Optional[Union[str, Path]] = None) -> None:
         if not path:
             raise ValueError("Empty path.")
+        path = Path(path).resolve()
 
         self.package_root = Path(package_root or '.').resolve()
         if not self.package_root.exists():
@@ -22,16 +26,18 @@ class ImportsExtractor(ast.NodeVisitor):
         if not self.package_root.is_dir():
             raise ValueError(f"Package root '{package_root}' is not a folder.")
 
-        if not (path.samefile(package_root) or str(package_root) in str(path.resolve())):
+        if not (path.samefile(self.package_root) or str(self.package_root) in str(path.resolve())):
             raise ValueError(f"Path '{path}' is not located in the package root '{package_root}'.")
 
-        self.file_path = ImportsExtractor.get_python_file_path(path)
-        self.imports = []
-        self.importsFrom = []
-        self.modules = []
+        self.file_path: Path = get_python_file_path(path)
+        self.full_module_name = get_module_from_path(self.file_path, self.package_root)
+        self.imports: List[ast.Import] = []
+        self.importsFrom: List[ast.ImportFrom] = []
+        self.modules: List[str] = []
 
         ast_file = ast.parse(self.file_path.read_text())
         self.visit(ast_file)
+        self.add_module_parents()
 
     def visit_Import(self, node: ast.Import) -> None:
         self.imports.append(node)
@@ -77,20 +83,11 @@ class ImportsExtractor(ast.NodeVisitor):
                 )
             )
 
-    @staticmethod
-    def get_python_file_path(path: Union[str, Path]) -> Path:
+    def add_module_parents(self):
         """
-        Convert the path of a Python file or folder to an absolute path of the file
+        Adds missing module parents to the list of modules.
         """
-        file_path = Path(path).resolve()
-        if not file_path.exists():
-            raise ValueError(f"File {file_path} does not exist.")
-
-        if file_path.is_dir():
-            file_path = file_path / '__init__.py'
-
-        file_extension = PurePath(file_path).suffix
-        if file_extension != '.py':
-            raise ValueError(f"Not a Python file {file_path} with extension '{file_extension}'.")
-
-        return file_path
+        for module in self.modules:
+            parents = get_module_parents(module)
+            missing_parents = [p for p in parents if p not in self.modules]
+            self.modules.extend(missing_parents)
