@@ -11,11 +11,16 @@ from typing import Dict, List, Optional, Set, Union
 
 from aspy.refactor_imports.classify import ImportType, _get_module_info, classify_import
 
-from py2reqs.import_extractor import ImportsExtractor
+from py2reqs.imports_extractor import ImportsExtractor
 from py2reqs.utils import get_python_file_path
 
 
 class ImportsCollector:
+    """
+    Recursively collects Python imports.
+    Maintains a list of dependencies, paths, source files, 3rd party dependencies, etc.
+    """
+
     def __init__(self, app_dirs: Optional[List[Union[str, Path]]] = None, verbose: bool = False) -> None:
         """
         Constructor initializes the collections.
@@ -76,6 +81,10 @@ class ImportsCollector:
         return None
 
     def process_path(self, path: Union[str, Path]) -> None:
+        """
+        Given the path, extracts imports using ImportsExtractor and
+        calls process_modules on every found module.
+        """
         path = Path(path).resolve()
         root_folder = self._find_package_root_in_app_dirs(path)
         extractor = ImportsExtractor(path, package_root=root_folder)
@@ -85,6 +94,12 @@ class ImportsCollector:
         self.visited_files.add(str(get_python_file_path(path)))
 
     def collect_dependencies(self, source_path: Union[str, Path]) -> None:
+        """
+        The main entry point for the class. The source path is a Python file
+        or a folder. In the latter case, it is converted in __init__.py file.
+        To process multiple files or all files in a folder, call this function
+        for each individual file.
+        """
         self.source_files.add(str(get_python_file_path(source_path)))
         self.process_path(source_path)
         while len(self.files_to_visit):

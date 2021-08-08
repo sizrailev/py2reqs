@@ -1,5 +1,8 @@
+"""
+Extract imports of a single Python file.
+"""
 import ast
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import List, Optional, Union
 
 from py2reqs.utils import get_module_from_path, get_module_parents, get_python_file_path
@@ -15,6 +18,9 @@ class ImportsExtractor(ast.NodeVisitor):
     """
 
     def __init__(self, path: Union[str, Path], package_root: Optional[Union[str, Path]] = None) -> None:
+        """
+        Main function performing the imports extraction.
+        """
         if not path:
             raise ValueError("Empty path.")
         path = Path(path).resolve()
@@ -40,6 +46,9 @@ class ImportsExtractor(ast.NodeVisitor):
         self.add_module_parents()
 
     def visit_Import(self, node: ast.Import) -> None:
+        """
+        Implements ast.NodeVisitor callback for visiting an Import node.
+        """
         self.imports.append(node)
 
         # absolute imports - ignore indentation and just get all module names
@@ -47,6 +56,9 @@ class ImportsExtractor(ast.NodeVisitor):
             self.modules.append(name.name)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        """
+        Implements ast.NodeVisitor callback for visiting an ImportFrom node.
+        """
         self.importsFrom.append(node)
 
         if not node.level:
